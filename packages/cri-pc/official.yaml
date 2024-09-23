@@ -1,4 +1,7 @@
 gaming:
+  ## https://wiki.archlinux.org/title/KDE#Games
+- name: gamescope
+  description: SteamOS session compositing window manager
   ## https://www.protondb.com/help/improving-performance
 - name: gamemode
   description: A daemon/lib combo that allows games to request a set of optimisations be temporarily applied to the host OS
