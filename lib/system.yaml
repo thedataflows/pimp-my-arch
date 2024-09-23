@@ -1,0 +1,186 @@
+## https://taskfile.dev/usage/
+version: 3
+
+# silent: true
+
+set:
+  - nounset
+  - errexit
+  - pipefail
+
+vars:
+  PACMAN: pacman -Sy --noconfirm --needed
+
+includes:
+  installers:
+    internal: true
+    taskfile:  installers.yaml
+
+tasks:
+  iamroot:
+    desc: Check if the user is root
+    cmds:
+      - |
+        if [[ $EUID -ne 0 ]] then
+          echo "This must run as root!" 1>&2
+          exit 1
+        fi
+
+  iamnotroot:
+    desc: Check if the user is not root
+    cmds:
+      - |
+        if [[ $EUID -eq 0 ]] then
+          echo "This must run as a regular user!" 1>&2
+          exit 1
+        fi
+
+  sudo_install:
+    desc: Install and configure sudo
+    deps:
+      - iamroot
+    cmds:
+      - type sudo &>/dev/null || {{.PACMAN}} sudo
+      - |
+        getent group sudo &>/dev/null || groupadd sudo
+        [[ " $(id -Gn 1000) " =~ sudo ]] || \
+          { set -x; usermod -aG sudo $(id -un 1000); { set +x; } 2>/dev/null; }
+        SUDOFILE=/etc/sudoers.d/00_sudo
+        [[ -f "$SUDOFILE" ]] || echo "%sudo ALL=(ALL:ALL) ALL" > "$SUDOFILE"
+
+  os_packages:
+    desc: Install essential OS packages
+    vars:
+      PACKAGES: curl jq head awk tar unzip sed grep efibootmgr os-prober zsh fd
+    set:
+      - x
+    deps:
+      - sudo_install
+    cmds:
+      - |
+        type systemd-run &>/dev/null || sudo {{.PACMAN}} systemd
+        type tput &>/dev/null || sudo {{.PACMAN}} ncurses
+        type yq &>/dev/null || sudo {{.PACMAN}} go-yq
+      - for: { var: PACKAGES }
+        cmd: |
+          type {{.ITEM}} &>/dev/null || sudo {{.PACMAN}} {{.ITEM}}
+      - |
+        type sshd &>/dev/null || sudo {{.PACMAN}} openssh
+        sudo systemctl enable sshd
+        sudo systemctl restart sshd
+
+  keys_config:
+    desc: Add additional PGP keys for software repos
+    vars:
+      KEYS: 8DFE60B7327D52D6 93BDB53CD4EBC740 F4A7678C9C6B0B2B 6C429F1D8D84F46E 38DBBDC86092693E B8AC08600F108CDF
+    cmds:
+      - for: { var: KEYS }
+        cmd: gpg --list-keys "{{.ITEM}}" &>/dev/null || gpg --keyserver keyserver.ubuntu.com --recv-key "{{.ITEM}}"
+
+  pacman_config:
+    desc: Configure pacman
+    deps:
+      - task: installers:install_initool
+    vars:
+      FILE: /etc/pacman.conf
+    cmds:
+      - sudo ../scripts/backup.sh {{.FILE}}
+      - |
+        INI_SET="sudo initool --pass-through set {{.FILE}}"
+        INI_GET="sudo initool --pass-through get {{.FILE}}"
+        ## Relax pacman signature requirement. DAGNER!
+        if [[ $($INI_GET options RemoteFileSigLevel -v) != "Optional" ]]; then
+          set -x
+          $INI_SET options RemoteFileSigLevel Optional | sudo tee {{.FILE}} >/dev/null
+          { set +x; } 2>/dev/null
+        fi
+        ## Enable multilib (32bit repo)
+        if [[ -z $($INI_GET multilib Include -v) ]]; then
+          set -x
+          $INI_SET multilib Include /etc/pacman.d/mirrorlist | sudo tee {{.FILE}} >/dev/null
+          { set +x; } 2>/dev/null
+        fi
+
+  grub_config:
+    desc: Configure GRUB
+    set:
+      - errexit
+      - pipefail
+    deps:
+      - task: installers:install_initool
+    vars:
+      FILE: /etc/default/grub
+    cmds:
+      - |
+        type grub-install &>/dev/null || sudo {{.PACMAN}} grub
+        [[ -d /boot/grub ]] || mkdir -p /boot/grub
+        type lscpu &>/dev/null || sudo {{.PACMAN}} util-linux
+      - sudo ../scripts/backup.sh {{.FILE}}
+      - |
+        INI_GET="sudo initool --pass-through get {{.FILE}}"
+        ## Enable OS prober
+        if [[ "$($INI_GET "" GRUB_DISABLE_OS_PROBER -v)" != "\"false\"" ]]; then
+          set -x
+          sed -i -E 's,#*(GRUB_DISABLE_OS_PROBER=).*,\1"false",' {{.FILE}}
+          { set +x; } 2>/dev/null
+        fi
+        ## Set resolution
+        RESOLUTION='"1920x1080x32,auto"'
+        if [[ "$($INI_GET "" GRUB_GFXMODE -v)" != "$RESOLUTION" ]]; then
+          set -x
+          sed -i -E 's|#*(GRUB_GFXMODE=).*|\1'$RESOLUTION'|' {{.FILE}}
+          { set +x; } 2>/dev/null
+        fi
+        ## Enable iommu
+        VENDOR=intel
+        [[ $(lscpu | grep '^Vendor ID:' | awk '{print $3}') == "AuthenticAMD" ]] && VENDOR=amd
+        # INI_SET="sudo initool --pass-through set {{.FILE}}"
+        if [[ ! " $($INI_GET "" GRUB_CMDLINE_LINUX_DEFAULT -v) " =~ "${VENDOR}_iommu=on" ]]; then
+          set -x
+          sed -i -E "s,^#*(GRUB_CMDLINE_LINUX_DEFAULT.+[^\"]+),\1 ${VENDOR}_iommu=on," {{.FILE}}
+          { set +x; } 2>/dev/null
+        fi
+        if [[ ! " $($INI_GET "" GRUB_CMDLINE_LINUX_DEFAULT -v) " =~ "iommu=pt" ]]; then
+          set -x
+          sed -i -E 's,^#*(GRUB_CMDLINE_LINUX_DEFAULT.+[^\"]+),\1 iommu=pt,' {{.FILE}}
+          { set +x; } 2>/dev/null
+        fi
+        ## Install GRUB
+        set -x
+        efibootmgr &>/dev/null && \
+          grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArchLinux
+        ## Regenerate GRUB config
+        grub-mkconfig -o /boot/grub/grub.cfg
+
+  sensors_config:
+    desc: Configure lm_sensors
+    set:
+      - x
+    cmds:
+      - type sensors &>/dev/null || sudo {{.PACMAN}} lm_sensors
+      - |
+        sudo cp --update=none --verbose --no-dereference ../config/global/etc/modules-load.d/* /etc/modules-load.d/
+        sudo systemctl enable systemd-modules-load
+        sudo systemctl restart systemd-modules-load
+        sudo /usr/bin/sensors-detect --auto >/dev/null
+
+  faillock_config:
+    desc: Configure faillock
+    vars:
+      FILE: /etc/security/faillock.conf
+      MAX_TRIES: 5
+      LOCK_TIME: 300
+    cmds:
+      - |
+        if ! grep -q '^deny' {{.FILE}}; then
+          sudo ../scripts/backup.sh {{.FILE}}
+          set -x
+          sudo sed -i -E 's,^#?\s*(deny\s*=\s*).*,\1{{.MAX_TRIES}},' {{.FILE}}
+          { set +x; } 2>/dev/null
+        fi
+        if ! grep -q '^unlock_time' {{.FILE}}; then
+          sudo ../scripts/backup.sh {{.FILE}}
+          set -x
+          sudo sed -i -E 's,^#?\s*(unlock_time\s*=\s*).*,\1{{.LOCK_TIME}},' {{.FILE}}
+          { set +x; } 2>/dev/null
+        fi

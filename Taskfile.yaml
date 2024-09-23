@@ -1,0 +1,442 @@
+## https://taskfile.dev/usage/
+version: 3
+
+silent: true
+
+set:
+  - nounset
+  - errexit
+  - pipefail
+
+vars:
+  PARU: paru -S --noconfirm --needed
+  CP: cp --update=none --verbose --recursive --no-dereference
+  TASK_TITLE: printf '\n>>>> %s >>>>\n' '{{.TASK}}'
+
+includes:
+  system:
+    internal: true
+    taskfile:  lib/system.yaml
+    dir: lib
+  installers:
+    internal: true
+    taskfile:  lib/installers.yaml
+
+tasks:
+  default:
+    desc: List all tasks
+    cmds:
+      - task --list-all
+
+  system:
+    desc: Configure Arch system
+    aliases:
+      - s
+    deps:
+      - task: system:os_packages
+    cmds:
+      - task: system:keys_config
+      - task: system:pacman_config
+      - task: system:grub_config
+      - task: system:sensors_config
+      - task: system:faillock_config
+
+  arch:
+    desc: Set up full Arch experience
+    aliases:
+      - a
+    set:
+      - x
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
+    cmds:
+      - paru -Sy --noconfirm
+      - |
+        systemctl --user enable ssh-agent
+        systemctl --user start ssh-agent
+      - task: video_drivers
+      - task: install_packages
+      - task: remote_mounts
+      - task: local_mounts
+      - task: samba
+      # - task: hyprland
+      - task: containerd
+      - task: configuration
+
+  configuration:
+    desc: Configuration aggregate task
+    aliases:
+      - c
+    deps:
+      - task: desktop_config
+      - task: atuin_config
+      - task: catppuccin-mocha-grub-theme_config
+      - task: rustdesk_configure
+      - task: sunshine_config
+      - task: gnome-ssh-askpass4_config
+      - task: all_configs
+
+  all_configs:
+    desc: Place configs in their respective directories. Should be called last.
+    deps:
+      - task: system:iamnotroot
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - type fd &> /dev/null || {{.PARU}} fd
+      - |
+        ## System
+        for d in etc usr; do
+          for SRC in "config/local/$(hostname)/$d" "config/global/$d"; do
+            if [[ -d "$SRC" ]]; then
+              sudo {{.CP}} $SRC/* /$d/
+            fi
+          done
+        done
+      - |
+        ## User Symlink
+        mklinks() {
+          [[ -r "$1" ]] || return
+          for DEST in $(fd --max-depth 1 --hidden --format '{/}' . "$1"); do
+            if [[ ! -L $2/$DEST ]]; then
+              ln -vs "$PWD/$1/$DEST" $2/ || true
+            fi
+          done
+        }
+        mklinks config/local/$(hostname)/.config ~/.config
+        mklinks config/global/.config ~/.config
+        mklinks config/global/.local/share/nautilus ~/.local/share/nautilus
+
+  video_drivers:
+    desc: Install video drivers
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - |
+        type lspci || {{.PARU}} pciutils
+        VGA=$(lspci | grep VGA | awk '{print $5}')
+        echo "$VGA VGA detected"
+        case $VGA in
+          NVIDIA)
+            set -x
+            {{.PARU}} nvtop nvidia nvidia-patch opencl-nvidia lib32-nvidia-utils lib32-opencl-nvidia libva-nvidia-driver
+            ;;
+          ## TODO Untested
+          Advanced)
+            set -x
+            {{.PARU}} mesa lib32-mesa vulkan-radeon libva-mesa-driver lib32-libva-mesa-driver
+            ;;
+          ## TODO Untested
+          Intel)
+            set -x
+            {{.PARU}} mesa lib32-mesa vulkan-intel libva-intel-driver lib32-libva-intel-driver
+            ;;
+        esac
+
+  install_packages:
+    desc: Install packages from all yaml files in packages/ directory
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - type yq &> /dev/null || {{.PARU}} go-yq
+      - |
+        {{.PARU}} $(yq --no-colors --no-doc '.*[].name' packages/*.yaml packages/$(hostname)/*.yaml || true)
+
+  remote_mounts:
+    desc: Mount remote filesystems
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - type nfsidmap &>/dev/null || {{.PARU}} nfs-utils nfsidmap
+      - |
+        SERVICE_DIR=/usr/local/lib/systemd/system
+        sudo test -d "$SERVICE_DIR" || sudo mkdir -p "$SERVICE_DIR"
+        MOUNTS=$(cat config/global/remote-mounts.yaml config/local/$(hostname)/remote-mounts.yaml 2>/dev/null|| true)
+        for NAME in $(yq -r 'keys[]' <<< "$MOUNTS"); do
+          MOUNT=$(yq -r ".$NAME" <<< "$MOUNTS")
+          TYPE=$(yq -r ".type" - <<< "$MOUNT")
+          ## TODO support cifs as well?
+          ## The problem with cifs is securing the credentials file.
+          ## https://github.com/systemd/systemd/issues/23535
+          ## https://systemd.io/CREDENTIALS/
+          [[ "$TYPE" == "nfs" ]] || continue
+          CREDS=
+          WHAT=$(yq -r ".source" - <<< "$MOUNT")
+          WHERE=$(yq -r ".destination" - <<< "$MOUNT")
+          OPTIONS=$(yq -r ".options" - <<< "$MOUNT")
+          [[ -z "$OPTIONS" || "$OPTIONS" == "null" ]] && \
+            OPTIONS="rw,nosuid,soft,nfsvers=4,noacl,async,nocto,nconnect=16,_netdev,timeo=10,retrans=2,bg"
+          W=${WHERE#*/}
+          FILE="$SERVICE_DIR/${W//\//-}.mount"
+          ## Backup existing
+          sudo scripts/backup.sh "$FILE"
+          ## Write new
+          cat <<! | sudo tee "$FILE" >/dev/null
+        [Unit]
+        Description=Mount unit for $NAME
+        After=network.target local-fs.target
+
+        [Mount]
+        What=$WHAT
+        Where=$WHERE
+        Type=$TYPE
+        $CREDS
+        Options=$OPTIONS
+
+        [Install]
+        WantedBy=multi-user.target
+        !
+          ## Enable and start the service
+          sudo systemctl daemon-reload
+          set -x
+          sudo systemctl enable "${FILE##*/}"
+          sudo systemctl start "${FILE##*/}" || true
+          { set +x; } 2>/dev/null
+        done
+
+  local_mounts:
+    desc: Mount local filesystems
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - type ntfs-3g &>/dev/null || {{.PARU}} ntfs-3g
+      - |
+        SERVICE_DIR=/usr/local/lib/systemd/system
+        sudo test -d "$SERVICE_DIR" || sudo mkdir -p "$SERVICE_DIR"
+        MOUNTS=$(cat config/global/local-mounts.yaml config/local/$(hostname)/local-mounts.yaml 2>/dev/null|| true)
+        for NAME in $(yq -r 'keys[]' <<< "$MOUNTS"); do
+          MOUNT=$(yq -r ".$NAME" <<< "$MOUNTS")
+          TYPE=$(yq -r ".type" - <<< "$MOUNT")
+          WHAT=$(yq -r ".uuid" - <<< "$MOUNT")
+          WHERE=$(yq -r ".destination" - <<< "$MOUNT")
+          OPTIONS=$(yq -r ".options" - <<< "$MOUNT")
+          if [[ -z "$OPTIONS" || "$OPTIONS" == "null" ]]; then
+            case $TYPE in
+              ntfs3)
+                ## https://docs.kernel.org/filesystems/ntfs3.html
+                OPTIONS="auto,rw,uid=$(id -u),gid=$(id -g),dmask=027,fmask=027,dev,exec,noatime,iocharset=utf8,windows_names,suid,discard"
+                ;;
+              ntfs-3g)
+                OPTIONS="auto,rw,uid=$(id -u),gid=$(id -g),dmask=027,fmask=077,dev,exec,noatime,iocharset=utf8,windows_names,big_writes,suid"
+                ;;
+              *)
+                OPTIONS=
+                ;;
+            esac
+          fi
+          W=${WHERE#*/}
+          FILE="$SERVICE_DIR/${W//\//-}.mount"
+          ## Backup existing
+          sudo scripts/backup.sh "$FILE"
+          ## Write new
+          cat <<! | sudo tee "$FILE" >/dev/null
+        [Unit]
+        Description=Local mount unit for $NAME
+
+        [Mount]
+        What=UUID=$WHAT
+        Where=$WHERE
+        Type=$TYPE
+        Options=$OPTIONS
+
+        [Install]
+        WantedBy=multi-user.target
+        !
+          ## Enable and start the service
+          sudo systemctl daemon-reload
+          set -x
+          sudo systemctl enable "${FILE##*/}"
+          sudo systemctl start "${FILE##*/}" || true
+          { set +x; } 2>/dev/null
+        done
+
+  samba:
+    desc: Install and configure Samba
+    summary: |
+      Installs Samba and Avahi, enables and starts Avahi, and configures Samba.
+      If local M$ Windows mounts file is present, it creates samba configs for them as well.
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - |
+        type fd &> /dev/null || {{.PARU}} fd
+        type yq &> /dev/null || {{.PARU}} go-yq
+        type hostname &> /dev/null || {{.PARU}} inetutils
+        type samba &> /dev/null || {{.PARU}} samba
+        type avahi-daemon &> /dev/null || {{.PARU}} avahi
+      - |
+        set -x
+        sudo systemctl enable avahi-daemon
+        sudo systemctl start avahi-daemon
+        sudo {{.CP}} config/global/etc/samba /etc/
+      - |
+        SMB_DEFAULT_GROUP=${SMB_DEFAULT_GROUP:-smb}
+        ## Create the group if it doesn't exist
+        sudo getent group "$SMB_DEFAULT_GROUP" &>/dev/null || \
+          { set -x; sudo groupadd "$SMB_DEFAULT_GROUP"; { set +x; } 2>/dev/null; }
+        ## Add current user to the samba group
+        [[ " $(id -Gn) " =~ $SMB_DEFAULT_GROUP ]] || \
+          { set -x; sudo usermod -aG $SMB_DEFAULT_GROUP $USER; { set +x; } 2>/dev/null; }
+        ## Add current user to samba
+        sudo pdbedit -L | grep -qP "^$USER:" || \
+          { set -x; sudo smbpasswd -a "$USER"; { set +x; } 2>/dev/null; }
+        ## Create samba configs for existing mounts
+        SMB_CONF_DIR="/etc/samba/smb.conf.d"
+        sudo test -d "$SMB_CONF_DIR" || \
+          { set -x; sudo mkdir -p "$SMB_CONF_DIR"; { set +x; } 2>/dev/null; }
+        MOUNTS=$(cat config/local/$(hostname)/local-mounts.yaml) || continue
+        for NAME in $(yq 'keys[]' <<< "$MOUNTS"); do
+          DEST=$(yq -r ".${NAME}.destination" - <<< "$MOUNTS")
+          FILE="$SMB_CONF_DIR/${NAME}.conf"
+          ## Backup existing
+          sudo scripts/backup.sh "$FILE"
+          ## Write new
+          cat <<! | sudo tee "$FILE" >/dev/null
+        [$NAME]
+        comment = $NAME
+        path = $DEST
+        valid users = @$SMB_DEFAULT_GROUP
+        public = no
+        writable = yes
+        !
+          ## Include the config in the main smb.conf
+          sudo grep -qP "^include\s*=\s*$FILE" "/etc/samba/smb.conf" || \
+            { set -x; sudo tee -a "/etc/samba/smb.conf" <<< "include = $FILE" >/dev/null; { set +x; } 2>/dev/null; }
+        done
+        ## Enable and restart samba service
+        set -x
+        sudo systemctl enable smb
+        sudo systemctl restart smb
+
+  hyprland:
+    desc: "[EXPERIMENTAL] Set up Hyperland"
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - |
+        {{.PARU}} hyprland gum network-manager-applet waybar
+
+  containerd:
+    desc: Install containerd and rootlesskit for the current user, while disabling the system services
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - |
+        type buildkitd &>/dev/null || {{.PARU}} buildkit
+        type rootlesskit &>/dev/null || {{.PARU}} rootlesskit
+        type nerdctl &>/dev/null || {{.PARU}} nerdctl
+        type newuidmap &>/dev/null || {{.PARU}} shadow
+        type /opt/cni/bin/bridge &>/dev/null || {{.PARU}} cni-plugins
+        type slirp4netns &>/dev/null || {{.PARU}} slirp4netns
+      - |
+        set -x
+        sudo test -r "/usr/local/bin/docker" || \
+          sudo ln -s /usr/bin/nerdctl /usr/local/bin/docker
+        { set +x; } 2>/dev/null
+        ## Setup rootless containerd
+        sudo systemctl daemon-reload
+        for srv in containerd buildkit; do
+          set -x
+          sudo systemctl disable $srv
+          sudo systemctl stop $srv || true
+          { set +x; } 2>/dev/null
+        done
+        ## Install
+        set -x
+        containerd-rootless-setuptool.sh install
+        containerd-rootless-setuptool.sh install-buildkit
+
+  desktop_config:
+    desc: Generic configuration for desktop environment
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - |
+        ## Fixes rendering issues with WebKitGTK based apps like Whatsapp, Minigalaxy, Journal Viewer
+        ## TODO is this still relevant under Wayland?
+        grep -qP '^WEBKIT_DISABLE_DMABUF_RENDERER' /etc/environment || \
+          sudo sed -i -E 's,^[#\s]*(WEBKIT_DISABLE_DMABUF_RENDERER).+,\1=1,' /etc/environment
+        grep -qP '^QT_AUTO_SCREEN_SCALE_FACTOR' /etc/environment || \
+          sudo sed -i -E 's,^[#\s]*(QT_AUTO_SCREEN_SCALE_FACTOR).+,\1=1,' /etc/environment
+        grep -qP '^QT_QPA_PLATFORMTHEME' /etc/environment || \
+          sudo sed -i -E 's,^[#\s]*(QT_QPA_PLATFORMTHEME).+,\1=qt6ct,' /etc/environment
+      - |
+        ## https://wiki.archlinux.org/title/GDM#Wayland_and_the_proprietary_NVIDIA_driver
+        UDEV_RULES='/etc/udev/rules.d/61-gdm.rules'
+        sudo test -L "$UDEV_RULES" || \
+          sudo ln -s /dev/null "$UDEV_RULES"
+
+  atuin_config:
+    desc: Configure atuin for bash
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - type atuin &>/dev/null || {{.PARU}} atuin
+      - |
+        ATUIN_SCRIPT_PATH=/usr/local/libexec/atuin
+        sudo test -d "$ATUIN_SCRIPT_PATH" || sudo mkdir -p "$ATUIN_SCRIPT_PATH"
+        sudo scripts/backup.sh "$ATUIN_SCRIPT_PATH/bash-preexec.sh"
+        sudo curl -sSL https://raw.githubusercontent.com/rcaloras/bash-preexec/master/bash-preexec.sh -o "$ATUIN_SCRIPT_PATH/bash-preexec.sh"
+        if ! grep -q 'bash-preexec\.sh' /etc/bash.bashrc; then
+          sudo scripts/backup.sh /etc/bash.bashrc
+          echo "[[ -f $ATUIN_SCRIPT_PATH/bash-preexec.sh ]] && source $ATUIN_SCRIPT_PATH/bash-preexec.sh" | sudo tee -a /etc/bash.bashrc
+        fi
+        if ! grep -q 'atuin init' /etc/bash.bashrc; then
+          sudo scripts/backup.sh /etc/bash.bashrc
+          printf "%s\n\n" 'eval "$(atuin init bash)"' | sudo tee -a /etc/bash.bashrc
+        fi
+
+  catppuccin-mocha-grub-theme_config:
+    desc: Configure catppuccin-mocha-grub-theme
+    status:
+      - paru -Qi catppuccin-mocha-grub-theme-git &>/dev/null && exit 1 || exit 0
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - |
+        grep -q '^GRUB_THEME=' /etc/default/grub && exit 0
+        sudo scripts/backup.sh /etc/default/grub
+        sudo sed -i -E 's,^#*(GRUB_THEME=).+,\1"/usr/share/grub/themes/catppuccin-mocha/theme.txt",' /etc/default/grub
+        sudo grub-mkconfig -o /boot/grub/grub.cfg
+
+  rustdesk_configure:
+    desc: Configure RustDesk
+    status:
+      - type rustdesk &>/dev/null && exit 1 || exit 0
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - |
+        ## Disable system service
+        sudo systemctl is-enabled rustdesk &>/dev/null && \
+          sudo systemctl disable rustdesk
+        sudo systemctl is-active rustdesk &>/dev/null && \
+          sudo systemctl stop rustdesk
+        ## Copy config
+        [[ ! -d ~/.config/rustdesk ]] && mkdir -p ~/.config/rustdesk
+        {{.CP}} config/global/.config/rustdesk/* ~/.config/rustdesk/
+
+  sunshine_config:
+    desc: Configure Sunshine
+    status:
+      - type sunshine &>/dev/null && exit 1 || exit 0
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - sudo setcap cap_sys_admin+p $(which sunshine)
+
+  gnome-ssh-askpass4_config:
+    desc: Configure gnome-ssh-askpass4
+    status:
+      - paru -Qi gnome-ssh-askpass4-git &>/dev/null && exit 1 || exit 0
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - |
+        if grep -q SSH_ASKPASS /etc/environment; then
+          sudo sed -i -E 's,^#*(SSH_ASKPASS=).+,\1/usr/lib/ssh/gnome-ssh-askpass4,' /etc/environment
+        else
+          echo 'SSH_ASKPASS=/usr/lib/ssh/gnome-ssh-askpass4' | sudo tee -a /etc/environment >/dev/null
+        fi

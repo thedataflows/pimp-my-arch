@@ -1,0 +1,167 @@
+desktop:
+- name: albert
+  description: A sophisticated standalone keyboard launcher
+- name: anytype-bin
+  description: Operating environment for the new internet. Anytype is a next generation software that breaks down barriers between applications, gives back privacy and data ownership to users.
+- name: extension-manager
+  description: A native tool for browsing, installing, and managing GNOME Shell Extensions
+- name: catppuccin-gtk-theme-mocha
+  description: Soothing pastel theme for GTK - Mocha
+- name: bibata-cursor-theme-bin
+  description: Material Based Cursor Theme
+- name: gdm-settings
+  description: A settings app for Gnome's Login Manager, GDM
+- name: gnome-ssh-askpass4-git
+  description: A passphrase requester for ssh-add using gcr.
+- name: journal-viewer-bin
+  description: A modern linux desktop application to visualize systemd logs.
+- name: kvantum-theme-catppuccin-git
+  description: Soothing pastel theme for Kvantum
+- name: menulibre
+  description: An advanced menu editor that provides modern features in a clean, easy-to-use interface
+- name: resources
+  description: Keep an eye on system resources
+- name: ttf-quicksand-variable
+  description: A sans serif typeface designed by Andrew Paglinawan using geometric shapes (variable)
+
+multimedia:
+- name: ocenaudio-bin
+  description: Cross-platform, easy to use, fast and functional audio editor
+
+files:
+- name: bcompare-nautilus
+  description: Gnome/Nautilus service menus for Beyond Compare 5.
+- name: fswatch
+  description: A cross-platform file change monitor with multiple backends
+- name: fzf-tab-completion-git
+  description: Tab completion using fzf in zsh, bash, GNU readline apps (e.g. python, php -a etc.)
+- name: go-mtpfs-git
+  description: Simple tool for viewing MTP devices as FUSE filesystems
+- name: peazip-qt-bin
+  description: PeaZip file manager and archiver (binary release)
+- name: superfile-bin
+  description: Pretty fancy and modern file manager in terminal file manager
+- name: sysz
+  description: fzf terminal UI for systemctl
+- name: yazi
+  description: Blazing fast terminal file manager written in Rust, based on async I/O
+
+security:
+- name: git-credential-keepassxc
+  description: git-credential-keepassxc is a Git credential helper that allows Git (and shell scripts) to get/store logins from/to KeePassXC
+- name: sac-core
+  description: Thales/Gemalto SafeNet Authentication Client for eToken 5110/5300 & IDPrime (core PKCS#11 modules)
+
+system:
+- name: btrfs-assistant
+  description: An application for managing BTRFS subvolumes and Snapper snapshots
+- name: dust
+  description: A more intuitive version of du in rust
+- name: eget-bin
+  description: Easily install prebuilt binaries from GitHub
+- name: catppuccin-mocha-grub-theme-git
+  description: Soothing pastel theme for GRUB2 -- Mocha colorscheme
+- name: pacpreview
+  description: Pacman package info viewer, intended for use with fzf --preview
+- name: pacseek-bin
+  description: A terminal user interface for searching and installing Arch Linux packages (binary version)
+- name: parui
+  description: Simple TUI frontend for paru or yay
+- name: ventoy-bin
+  description: A new bootable USB solution
+- name: viddy-bin
+  description: A modern watch command, binary version
+
+network:
+- name: brave-bin
+  description: Web browser that blocks ads and trackers by default (binary release)
+- name: doggo-bin
+  description: Command-line DNS client for humans
+- name: moonlight-qt-bin
+  description: moonlight-qt bin from appimage
+- name: neoss
+  description: Unix tool with terminal UI for visualizing socket statistics
+- name: rustdesk-bin
+  description: Yet another remote desktop software, written in Rust. Works out of the box, no configuration required.
+- name: signal-desktop
+  description: Signal Private Messenger for Linux
+- name: teams
+  description: Microsoft Teams for Linux is your chat-centered workspace in Office 365
+- name: transgui-qt
+  description: A feature rich cross platform Transmission BitTorrent client. Faster and has more functionality than the built-in web GUI.
+- name: wuzz-bin
+  description: Interactive CLI tool for HTTP inspection
+
+productivity:
+- name: calibre
+  description: Ebook management application
+- name: glow
+  description: Command-line markdown renderer
+- name: onlyoffice-bin
+  description: An office suite that combines text, spreadsheet and presentation editors
+- name: superproductivity-bin
+  description: ToDo List / Time Tracker / Personal Jira Task Manager
+
+shell:
+- name: atuin
+  description: Magical shell history
+- name: btop-theme-catppuccin
+  description: Soothing pastel theme for btop
+- name: dasel-bin
+  description: Query and update data structures from the command line.
+- name: go-yq
+  description: Portable command-line YAML processor
+- name: mise-bin
+  description: The front-end to your dev env
+- name: mprocs-bin
+  description: Run multiple commands in parallel
+- name: oh-my-posh-bin
+  description: A prompt theme engine for any shell.
+- name: rnr-bin
+  description: A CLI tool to rename files and directories that supports regex. Compiled binary
+- name: zsh-autocomplete
+  description: IDE-style type-ahead completion for Zsh
+
+development:
+- name: d2
+  description: A modern diagram scripting language that turns text to diagrams
+- name: devbox-bin
+  description: A cli tool to easily create isolated shells and containers with nix.
+- name: fan2go-git
+  description: A simple daemon providing dynamic fan speed control based on temperature sensors
+- name: fan2go-tui-git
+  description: Terminal UI for fan2go.
+- name: lazygit
+  description: Simple terminal UI for git commands
+- name: surrealdb-bin
+  description: A scalable, distributed, collaborative, document-graph database, for the realtime web
+- name: surrealist-bin
+  description: Surrealist is the ultimate way to visually manage your SurrealDB database
+- name: visual-studio-code-bin
+  description: Visual Studio Code (vscode)
+- name: zed
+  description: A high-performance, multiplayer code editor from the creators of Atom and Tree-sitter
+
+cloud:
+- name: fluxcd
+  description: Open and extensible continuous delivery solution for Kubernetes
+- name: k9s
+  description: TUI for managing Kubernetes clusters and pods
+- name: lazydocker-bin
+  description: A simple terminal UI for docker and docker-compose, written in Go with the gocui library.
+- name: openlens-bin
+  description: The Kubernetes IDE (fork lens-bin without lenscloud-lens-extension). Read more - https
+- name: pack-cli
+  description: CLI for building apps using Cloud Native Buildpacks
+
+backup:
+- name: kopia-bin
+  description: A cross-platform backup-tool with encryption, deduplication, compression and cloud support.
+- name: kopia-ui-bin
+  description: A cross-platform backup-tool with encryption, deduplication, compression and cloud support.
+- name: syncthing-gtk
+  description: GTK3 based GUI and notification area icon for Syncthing.
+
+ai:
+- name: ollama-cuda
+  description: Create, run and share large language models (LLMs) with CUDA

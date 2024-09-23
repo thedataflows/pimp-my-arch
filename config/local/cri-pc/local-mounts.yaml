@@ -1,0 +1,30 @@
+win_c:
+  uuid: "01D97D07D7C008F0"
+  destination: "/mnt/win/c"
+  type: ntfs3
+
+win_d:
+  uuid: "01D8D9D274572F60"
+  destination: "/mnt/win/d"
+  type: ntfs3
+
+win_e:
+  uuid: "01D725A1BB0D4390"
+  destination: "/mnt/win/e"
+  type: ntfs3
+
+win_f:
+  uuid: "01D8D8F54ECDFFE0"
+  destination: "/mnt/win/f"
+  type: ntfs3
+
+win_h:
+  uuid: "01DAB89FEB0E6170"
+  destination: "/mnt/win/h"
+  type: ntfs3
+
+linux1:
+  uuid: "6ee80d9a-610c-458c-a054-143e9e9683d5"
+  destination: "/mnt/linux1"
+  type: xfs
+  options: rw,relatime

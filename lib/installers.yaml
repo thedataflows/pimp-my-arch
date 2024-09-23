@@ -1,0 +1,73 @@
+## https://taskfile.dev/usage/
+version: 3
+
+# silent: true
+
+set:
+  - nounset
+  - errexit
+  - pipefail
+
+tasks:
+  latest_github_release:
+    silent: true
+    internal: true
+    vars:
+      LATEST:
+        sh: curl --silent --location "https://api.github.com/repos/{{.REPO}}/releases/latest" | jq -r .tag_name
+    cmds:
+      - |
+        [[ "{{.LATEST}}" == "{{.VERSION}}" || "{{.LATEST}}" == "v{{.VERSION}}" ]] || echo "[WARN] {{.REPO}} has a newer release: {{.LATEST}}"
+
+  install_initool:
+    silent: true
+    vars: &vars
+      NAME: initool
+      REPO: dbohdan/{{.NAME}}
+      VERSION: 0.18.0
+      URL_TPL: https://github.com/{{.REPO}}/releases/download/v{{.VERSION}}/{{.NAME}}-v{{.VERSION}}-fc0c3b1-{{OS}}-x86_64.zip
+      DEST_DIR: /usr/local/bin
+    desc: Install {{.REPO}} {{.VERSION}}
+    set:
+      - x
+    # deps:
+    #   - vars: *vars
+    #     task: latest_github_release
+    status:
+      - |
+        [[ $({{.NAME}} version) == "{{.VERSION}}" ]]
+    cmds:
+      - |
+        echo "Installing {{.REPO}} {{.VERSION}}"
+        sudo mkdir -p {{.DEST_DIR}}
+      - cmd: |
+          DOWNLOADED=/tmp/{{.NAME}}.zip
+          curl -sL "{{.URL_TPL}}" > "$DOWNLOADED"
+          sudo unzip -o "$DOWNLOADED" -d "{{.DEST_DIR}}"
+          sudo chmod +x "{{.DEST_DIR}}/{{.NAME}}"
+          rm -f "$DOWNLOADED"
+
+  install_paru:
+    silent: true
+    vars: &vars
+      NAME: paru
+      REPO: Morganamilo/{{.NAME}}
+      VERSION: v2.0.3
+      URL_TPL: https://github.com/{{.REPO}}/releases/download/{{.VERSION}}/{{.NAME}}-{{.VERSION}}-x86_64.tar.zst
+      DEST_DIR: /usr/local/bin
+    desc: Install {{.REPO}} {{.VERSION}}
+    set:
+      - x
+    # deps:
+    #   - vars: *vars
+    #     task: latest_github_release
+    status:
+      - |
+        [[ $({{.NAME}} --version | awk '{print $2}') == "{{.VERSION}}" ]]
+    cmds:
+      - |
+        echo "Installing {{.REPO}} {{.VERSION}}"
+        sudo mkdir -p {{.DEST_DIR}}
+      - |
+        curl -sL "{{.URL_TPL}}" | sudo tar --zstd -xvf - -C {{.DEST_DIR}} {{.NAME}} {{.NAME}}.conf
+        sudo mv {{.DEST_DIR}}/{{.NAME}}.conf {{.DEST_DIR}}/../etc/

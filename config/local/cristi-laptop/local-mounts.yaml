@@ -1,0 +1,9 @@
+win_c:
+  uuid: "01DABE5ADF2BBA90"
+  destination: "/mnt/win/c"
+  type: ntfs3
+
+win_d:
+  uuid: "01D81FF655CE7800"
+  destination: "/mnt/win/d"
+  type: ntfs3
