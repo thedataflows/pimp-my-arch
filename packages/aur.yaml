@@ -3,16 +3,10 @@ desktop:
   description: A sophisticated standalone keyboard launcher
 - name: anytype-bin
   description: Operating environment for the new internet. Anytype is a next generation software that breaks down barriers between applications, gives back privacy and data ownership to users.
-- name: extension-manager
-  description: A native tool for browsing, installing, and managing GNOME Shell Extensions
 - name: catppuccin-gtk-theme-mocha
   description: Soothing pastel theme for GTK - Mocha
 - name: bibata-cursor-theme-bin
   description: Material Based Cursor Theme
-- name: gdm-settings
-  description: A settings app for Gnome's Login Manager, GDM
-- name: gnome-ssh-askpass4-git
-  description: A passphrase requester for ssh-add using gcr.
 - name: journal-viewer-bin
   description: A modern linux desktop application to visualize systemd logs.
 - name: kvantum-theme-catppuccin-git
@@ -21,6 +15,8 @@ desktop:
   description: An advanced menu editor that provides modern features in a clean, easy-to-use interface
 - name: resources
   description: Keep an eye on system resources
+
+fonts:
 - name: ttf-quicksand-variable
   description: A sans serif typeface designed by Andrew Paglinawan using geometric shapes (variable)
 
@@ -29,8 +25,6 @@ multimedia:
   description: Cross-platform, easy to use, fast and functional audio editor
 
 files:
-- name: bcompare-nautilus
-  description: Gnome/Nautilus service menus for Beyond Compare 5.
 - name: fswatch
   description: A cross-platform file change monitor with multiple backends
 - name: fzf-tab-completion-git

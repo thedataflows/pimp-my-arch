@@ -1,24 +1,4 @@
-gnome-desktop:
-- name: gdm
-  description: Display manager and login screen
-- name: gnome-themes-extra
-  description: Extra Themes for GNOME Applications
-- name: gnome-system-monitor
-  description: View current processes and monitor system state
-- name: gnome-keyring
-  description: Stores passwords and encryption keys
-- name: gnome-shell-extensions
-  description: Extensions for GNOME shell, including classic mode
-- name: gnome-control-center
-  description: GNOME's main interface to configure various aspects of the desktop
-- name: gnome-logs
-  description: A log viewer for the systemd journal
-- name: dconf-editor
-  description: GSettings editor for GNOME
-
 graphics:
-- name: eog-plugins
-  description: Plugins for Eye of Gnome
 - name: libheif
   description: An HEIF and AVIF file format decoder and encoder
 - name: xcolor
@@ -27,10 +7,6 @@ graphics:
   description: A simple drawing application to create handwritten notes
 
 productivity:
-- name: evince
-  description: Document viewer (PDF, PostScript, XPS, djvu, dvi, tiff, cbr, cbz, cb7, cbt)
-- name: gedit
-  description: GNOME Text Editor
 - name: thunderbird
   description: Standalone mail and news reader from mozilla.org
 - name: discord
@@ -45,26 +21,18 @@ multimedia:
   description: Free, open source software for live streaming and recording
 
 files:
-- name: nautilus-share
-  description: Nautilus extension to share folder using Samba
-- name: sushi
-  description: A quick previewer for Nautilus
-- name: meld
-  description: Compare files, directories and working copies
-- name: baobab
-  description: A graphical directory tree analyzer
 - name: doublecmd-qt6
   description: twin-panel (commander-style) file manager (Qt6)
 - name: libunrar
   description: Library and header file for applications that use libunrar
 - name: xarchiver
   description: GTK+ frontend to various command line archivers
+- name: baobab
+  description: A graphical directory tree analyzer
 
 network:
 - name: nm-connection-editor
   description: NetworkManager GUI connection editor and widgets
-- name: freerdp
-  description: Free implementation of the Remote Desktop Protocol (RDP)
 - name: remmina
   description: remote desktop client written in GTK+
 - name: grsync
@@ -77,14 +45,6 @@ system:
   description: A Partition Magic clone, frontend to GNU Parted
 - name: gsmartcontrol
   description: A graphical user interface for the smartctl hard disk drive health inspection tool.
-- name: qt5ct
-  description: Qt5 Configuration Utility
-- name: qt6ct
-  description: Qt 6 Configuration Utility
-- name: qt5-wayland
-  description: Provides APIs for Wayland
-- name: qt6-wayland
-  description: Provides APIs for Wayland
 - name: kvantum
   description: SVG-based theme engine for Qt6 (including config tool and extra themes)
 - name: papirus-icon-theme

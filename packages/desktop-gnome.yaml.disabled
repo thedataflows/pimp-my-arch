@@ -1,0 +1,33 @@
+gnome-desktop:
+- name: gdm
+  description: Display manager and login screen
+- name: gnome-themes-extra
+  description: Extra Themes for GNOME Applications
+- name: gnome-system-monitor
+  description: View current processes and monitor system state
+- name: gnome-keyring
+  description: Stores passwords and encryption keys
+- name: gnome-shell-extensions
+  description: Extensions for GNOME shell, including classic mode
+- name: gnome-control-center
+  description: GNOME's main interface to configure various aspects of the desktop
+- name: gnome-logs
+  description: A log viewer for the systemd journal
+- name: dconf-editor
+  description: GSettings editor for GNOME
+
+graphics:
+- name: eog-plugins
+  description: Plugins for Eye of Gnome
+
+productivity:
+- name: evince
+  description: Document viewer (PDF, PostScript, XPS, djvu, dvi, tiff, cbr, cbz, cb7, cbt)
+
+files:
+- name: nautilus-share
+  description: Nautilus extension to share folder using Samba
+- name: sushi
+  description: A quick previewer for Nautilus
+- name: meld
+  description: Compare files, directories and working copies

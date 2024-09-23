@@ -1,0 +1,14 @@
+desktop-gnome:
+- name: gdm-settings
+  description: A settings app for Gnome's Login Manager, GDM
+- name: extension-manager
+  description: A native tool for browsing, installing, and managing GNOME Shell Extensions
+
+security:
+- name: gnome-ssh-askpass4-git
+  description: A passphrase requester for ssh-add using gcr.
+
+files:
+- name: bcompare-nautilus
+  description: Gnome/Nautilus service menus for Beyond Compare 5.
+
