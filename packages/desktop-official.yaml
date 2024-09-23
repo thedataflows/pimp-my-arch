@@ -63,6 +63,8 @@ system:
   description: Server access control program for X
 - name: wmctrl
   description: Control your EWMH compliant window manager from command line
+- name: systemd-ui
+  description: Graphical front-end for systemd
 
 security:
 - name: keepassxc
