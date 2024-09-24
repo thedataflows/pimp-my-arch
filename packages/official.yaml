@@ -131,6 +131,8 @@ system:
   description: Gives you the temperature of your hard drive by reading S.M.A.R.T. information
 - name: expac
   description: alpm data (pacman database) extraction utility
+- name: power-profiles-daemon
+  description: Makes power profiles handling available over D-Bus
 
 backup:
 - name: rsync
