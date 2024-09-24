@@ -3,6 +3,8 @@ desktop-gnome:
   description: A settings app for Gnome's Login Manager, GDM
 - name: extension-manager
   description: A native tool for browsing, installing, and managing GNOME Shell Extensions
+- name: catppuccin-gtk-theme-mocha
+  description: Soothing pastel theme for GTK - Mocha
 
 security:
 - name: gnome-ssh-askpass4-git
@@ -11,4 +13,3 @@ security:
 files:
 - name: bcompare-nautilus
   description: Gnome/Nautilus service menus for Beyond Compare 5.
-
