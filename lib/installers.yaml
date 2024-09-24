@@ -52,7 +52,7 @@ tasks:
     vars: &vars
       NAME: paru
       REPO: Morganamilo/{{.NAME}}
-      VERSION: v2.0.3
+      VERSION: v2.0.4
       URL_TPL: https://github.com/{{.REPO}}/releases/download/{{.VERSION}}/{{.NAME}}-{{.VERSION}}-x86_64.tar.zst
       DEST_DIR: /usr/local/bin
     desc: Install {{.REPO}} {{.VERSION}}
