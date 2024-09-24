@@ -9,8 +9,6 @@ graphics:
 productivity:
 - name: thunderbird
   description: Standalone mail and news reader from mozilla.org
-- name: discord
-  description: All-in-one voice and text chat for gamers
 
 multimedia:
 - name: strawberry
