@@ -17,3 +17,7 @@ security:
 files:
 - name: bcompare-nautilus
   description: Gnome/Nautilus service menus for Beyond Compare 5.
+
+system:
+- name: resources
+  description: Keep an eye on system resources

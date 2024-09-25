@@ -9,8 +9,6 @@ desktop:
   description: Soothing pastel theme for Kvantum
 - name: menulibre
   description: An advanced menu editor that provides modern features in a clean, easy-to-use interface
-- name: resources
-  description: Keep an eye on system resources
 
 fonts:
 - name: ttf-quicksand-variable
