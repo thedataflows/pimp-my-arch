@@ -72,7 +72,7 @@ tasks:
   keys_config:
     desc: Add additional PGP keys for software repos
     vars:
-      KEYS: 8DFE60B7327D52D6 93BDB53CD4EBC740 F4A7678C9C6B0B2B 6C429F1D8D84F46E 38DBBDC86092693E B8AC08600F108CDF
+      KEYS: 8DFE60B7327D52D6 93BDB53CD4EBC740 F4A7678C9C6B0B2B 6C429F1D8D84F46E 38DBBDC86092693E B8AC08600F108CDF D9C4D26D0E604491
     cmds:
       - for: { var: KEYS }
         cmd: gpg --list-keys "{{.ITEM}}" &>/dev/null || gpg --keyserver keyserver.ubuntu.com --recv-key "{{.ITEM}}"
