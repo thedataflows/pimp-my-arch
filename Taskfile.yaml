@@ -81,6 +81,7 @@ tasks:
     desc: Place configs in their respective directories. Should be called last.
     deps:
       - task: system:iamnotroot
+      - task: installers:install_paru
     cmds:
       - "{{.TASK_TITLE}}"
       - type fd &> /dev/null || {{.PARU}} fd
@@ -116,24 +117,29 @@ tasks:
       - "{{.TASK_TITLE}}"
       - |
         type lspci || {{.PARU}} pciutils
-        VGA=$(lspci | grep VGA | awk '{print $5}')
-        echo "$VGA VGA detected"
-        case $VGA in
-          NVIDIA)
-            set -x
-            {{.PARU}} nvtop nvidia nvidia-patch opencl-nvidia lib32-nvidia-utils lib32-opencl-nvidia libva-nvidia-driver
-            ;;
-          ## TODO Untested
-          Advanced)
-            set -x
-            {{.PARU}} mesa lib32-mesa vulkan-radeon libva-mesa-driver lib32-libva-mesa-driver
-            ;;
-          ## TODO Untested
-          Intel)
-            set -x
-            {{.PARU}} mesa lib32-mesa vulkan-intel libva-intel-driver lib32-libva-intel-driver
-            ;;
-        esac
+      - |
+        ## Crude detection
+        for VGA in $(lspci | grep VGA | awk '{print $5}'); do
+          [[ "$VGA" == "$PREV" ]] && continue
+          PREV=$VGA
+          echo "$VGA VGA detected"
+          case $VGA in
+            NVIDIA)
+              set -x
+              {{.PARU}} nvtop nvidia nvidia-patch opencl-nvidia lib32-nvidia-utils lib32-opencl-nvidia libva-nvidia-driver
+              ;;
+            ## TODO Untested
+            Advanced)
+              set -x
+              {{.PARU}} mesa lib32-mesa vulkan-radeon libva-mesa-driver lib32-libva-mesa-driver
+              ;;
+            ## TODO Untested
+            Intel)
+              set -x
+              {{.PARU}} mesa lib32-mesa vulkan-intel libva-intel-driver lib32-libva-intel-driver
+              ;;
+          esac
+        done
 
   install_packages:
     desc: Install packages from all yaml files in packages/ directory
@@ -145,9 +151,14 @@ tasks:
       - type yq &> /dev/null || {{.PARU}} go-yq
       - |
         {{.PARU}} $(yq --no-colors --no-doc '.*[].name' packages/*.yaml packages/$(hostname)/*.yaml || true)
+      - task: installers:compat_jsoncpp
+      - task: installers:compat_libjxl
 
   remote_mounts:
     desc: Mount remote filesystems
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
     cmds:
       - "{{.TASK_TITLE}}"
       - type nfsidmap &>/dev/null || {{.PARU}} nfs-utils nfsidmap
@@ -199,6 +210,9 @@ tasks:
 
   local_mounts:
     desc: Mount local filesystems
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
     cmds:
       - "{{.TASK_TITLE}}"
       - type ntfs-3g &>/dev/null || {{.PARU}} ntfs-3g
@@ -362,11 +376,7 @@ tasks:
         ## Fixes rendering issues with WebKitGTK based apps like Whatsapp, Minigalaxy, Journal Viewer
         ## TODO is this still relevant under Wayland?
         grep -qP '^WEBKIT_DISABLE_DMABUF_RENDERER' /etc/environment || \
-          sudo sed -i -E 's,^[#\s]*(WEBKIT_DISABLE_DMABUF_RENDERER).+,\1=1,' /etc/environment
-        grep -qP '^QT_AUTO_SCREEN_SCALE_FACTOR' /etc/environment || \
-          sudo sed -i -E 's,^[#\s]*(QT_AUTO_SCREEN_SCALE_FACTOR).+,\1=1,' /etc/environment
-        grep -qP '^QT_QPA_PLATFORMTHEME' /etc/environment || \
-          sudo sed -i -E 's,^[#\s]*(QT_QPA_PLATFORMTHEME).+,\1=qt6ct,' /etc/environment
+          sudo sed -i -E 's,^[#\s]*(WE  BKIT_DISABLE_DMABUF_RENDERER).+,\1=1,' /etc/environment
       - |
         ## https://wiki.archlinux.org/title/GDM#Wayland_and_the_proprietary_NVIDIA_driver
         UDEV_RULES='/etc/udev/rules.d/61-gdm.rules'
@@ -375,6 +385,9 @@ tasks:
 
   atuin_config:
     desc: Configure atuin for bash
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
     cmds:
       - "{{.TASK_TITLE}}"
       - type atuin &>/dev/null || {{.PARU}} atuin
@@ -394,6 +407,9 @@ tasks:
 
   catppuccin-mocha-grub-theme_config:
     desc: Configure catppuccin-mocha-grub-theme
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
     status:
       - paru -Qi catppuccin-mocha-grub-theme-git &>/dev/null && exit 1 || exit 0
     cmds:
@@ -406,16 +422,18 @@ tasks:
 
   rustdesk_configure:
     desc: Configure RustDesk
+    vars:
+      SERVICE: rustdesk
     status:
       - type rustdesk &>/dev/null && exit 1 || exit 0
     cmds:
       - "{{.TASK_TITLE}}"
       - |
         ## Disable system service
-        sudo systemctl is-enabled rustdesk &>/dev/null && \
-          sudo systemctl disable rustdesk
-        sudo systemctl is-active rustdesk &>/dev/null && \
-          sudo systemctl stop rustdesk
+        sudo systemctl is-enabled {{.SERVICE}} &>/dev/null && \
+          sudo systemctl disable {{.SERVICE}}
+        sudo systemctl is-active {{.SERVICE}} &>/dev/null && \
+          sudo systemctl stop {{.SERVICE}}
         ## Copy config
         [[ ! -d ~/.config/rustdesk ]] && mkdir -p ~/.config/rustdesk
         {{.CP}} config/global/.config/rustdesk/* ~/.config/rustdesk/
@@ -430,6 +448,9 @@ tasks:
 
   gnome-ssh-askpass4_config:
     desc: Configure gnome-ssh-askpass4
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
     status:
       - paru -Qi gnome-ssh-askpass4-git &>/dev/null && exit 1 || exit 0
     cmds:
@@ -440,3 +461,29 @@ tasks:
         else
           echo 'SSH_ASKPASS=/usr/lib/ssh/gnome-ssh-askpass4' | sudo tee -a /etc/environment >/dev/null
         fi
+
+  sddm_config:
+    desc: Configure SDDM
+    vars:
+      SERVICE: sddm
+    status:
+      - type sddm &>/dev/null && exit 1 || exit 0
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - |
+        ! sudo systemctl is-enabled {{.SERVICE}} &>/dev/null && \
+          sudo systemctl enable {{.SERVICE}}
+
+  power-profiles-daemon_config:
+    desc: Configure power-profiles-daemon
+    vars:
+      SERVICE: power-profiles-daemon
+    status:
+      - type powerprofilesctl &>/dev/null && exit 1 || exit 0
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - |
+        ! sudo systemctl is-enabled {{.SERVICE}} &>/dev/null && \
+          sudo systemctl enable {{.SERVICE}}
+        ! sudo systemctl is-active {{.SERVICE}} &>/dev/null && \
+          sudo systemctl start {{.SERVICE}}
