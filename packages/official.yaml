@@ -161,8 +161,8 @@ shell:
   description: Cat clone with syntax highlighting and git integration
 - name: zoxide
   description: A smarter cd command for your terminal
-- name: screenfetch
-  description: CLI Bash script to show system/theme info in screenshots
+- name: macchina
+  description: A system information fetcher, with an (unhealthy) emphasis on performance.
 - name: difftastic
   description: An experimental diff tool that compares files based on their syntax
 
