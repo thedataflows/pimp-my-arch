@@ -184,3 +184,35 @@ tasks:
           sudo sed -i -E 's,^#?\s*(unlock_time\s*=\s*).*,\1{{.LOCK_TIME}},' {{.FILE}}
           { set +x; } 2>/dev/null
         fi
+
+  compat_jsoncpp:
+    desc: Manually install libjsoncpp.so.25
+    vars:
+      WHAT: usr/lib/libjsoncpp.so.25
+    cmds:
+      - |
+        sudo test -f /{{.WHAT}} || \
+          curl -sL https://archive.archlinux.org/packages/j/jsoncpp/jsoncpp-1.9.5-3-x86_64.pkg.tar.zst | \
+            sudo tar --zstd -xvf - -C / {{.WHAT}}
+
+  compat_libjxl:
+    desc: Manually install libjxl.so.0.10
+    vars:
+      WHAT: usr/lib/libjxl*.so.0.10*
+    cmds:
+      - |
+        [[ $(sudo fd 'libjxl.*\.so\.0\.10.*' /usr/lib | wc -l) -ge 4 ]] || \
+          curl -sL https://archive.archlinux.org/packages/l/libjxl/libjxl-0.10.3-1-x86_64.pkg.tar.zst | \
+            sudo tar --zstd --wildcards -xvf - -C / {{.WHAT}}
+
+  compat_libalpm:
+    desc: Manually install libalpm.so.14
+    vars:
+      WHAT: usr/lib/libalpm.so.14
+    cmds:
+      - |
+        if ! sudo test -f /{{.WHAT}}; then
+          curl -sL https://archive.archlinux.org/packages/p/pacman/pacman-6.1.0-3-x86_64.pkg.tar.zst | \
+            sudo tar --zstd --wildcards -xvf - -C / {{.WHAT}}.0.0 && \
+              sudo mv /{{.WHAT}}{.0.0,}
+        fi

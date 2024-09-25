@@ -151,8 +151,9 @@ tasks:
       - type yq &> /dev/null || {{.PARU}} go-yq
       - |
         {{.PARU}} $(yq --no-colors --no-doc '.*[].name' packages/*.yaml packages/$(hostname)/*.yaml || true)
-      - task: installers:compat_jsoncpp
-      - task: installers:compat_libjxl
+      - task: system:compat_jsoncpp
+      - task: system:compat_libjxl
+      - task: system:compat_libalpm
 
   remote_mounts:
     desc: Mount remote filesystems
