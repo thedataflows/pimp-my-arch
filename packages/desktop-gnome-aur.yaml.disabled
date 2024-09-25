@@ -6,6 +6,10 @@ desktop-gnome:
 - name: catppuccin-gtk-theme-mocha
   description: Soothing pastel theme for GTK - Mocha
 
+desktop:
+- name: albert
+  description: A sophisticated standalone keyboard launcher
+
 security:
 - name: gnome-ssh-askpass4-git
   description: A passphrase requester for ssh-add using gcr.
