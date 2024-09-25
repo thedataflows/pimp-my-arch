@@ -1,0 +1,41 @@
+kde-desktop:
+- name: sddm-theme-catppuccin
+  description: Soothing pastel theme for SDDM
+- name: sddm-kcm
+  description: KDE Config Module for SDDM
+- name: plasma-desktop
+  description: KDE Plasma Desktop
+- name: kwayland-integration
+  description: Provides integration plugins for various KDE frameworks for the wayland windowing system
+- name: kde-gtk-config
+  description: Syncs KDE settings to GTK applications
+
+files:
+- name: dolphin-plugins
+  desc: Extra Dolphin plugins
+
+graphics:
+- name: gwenview
+  description: A fast and easy to use image viewer
+
+productivity:
+- name: okular
+  description: Document Viewer
+
+system:
+- name: ksystemlog
+  description: System log viewer tool
+- name: plasma-pa
+  description: Plasma applet for audio volume management using PulseAudio
+- name: plasma-systemmonitor
+  description: An interface for monitoring system sensors, process information and other system resources
+- name: plasma-nm
+  description: Plasma applet written in QML for managing network connections
+- name: plasma-disks
+  description: Monitors S.M.A.R.T. capable devices for imminent failure
+
+security:
+- name: kleopatra
+  description: Certificate Manager and Unified Crypto GUI
+- name: kwalletmanager
+  description: Wallet management tool
