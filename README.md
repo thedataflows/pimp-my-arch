@@ -32,7 +32,7 @@ Then I wanted to replicate everything on a new machine. I had to go through the 
 
 ## Desktop Experience
 
-## Budgie
+### Budgie
 
 Is Gnome based, but I really enjoyed the simple look and feel. It is quite light and fast.
 
