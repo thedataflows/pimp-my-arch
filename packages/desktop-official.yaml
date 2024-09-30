@@ -1,8 +1,6 @@
 graphics:
 - name: libheif
   description: An HEIF and AVIF file format decoder and encoder
-- name: xcolor
-  description: Lightweight color picker for X11
 - name: rnote
   description: A simple drawing application to create handwritten notes
 
@@ -69,9 +67,3 @@ security:
   description: Cross-platform community-driven port of Keepass password manager
 - name: x11-ssh-askpass
   description: Lightweight passphrase dialog for SSH
-
-virtualization:
-- name: virt-manager
-  description: Desktop user interface for managing virtual machines
-- name: qemu-desktop
-  description: A QEMU setup for desktop environments
