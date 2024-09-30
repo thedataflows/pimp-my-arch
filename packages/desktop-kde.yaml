@@ -13,6 +13,10 @@ kde-desktop:
 files:
 - name: dolphin-plugins
   desc: Extra Dolphin plugins
+- name: bcompare
+  desc: "Beyond Compare 5: Compare, sync, and merge files and folders"
+- name: bcompare-kde6
+  desc: KDE Plasma 6 service menus for Beyond Compare 5
 
 graphics:
 - name: gwenview
@@ -39,3 +43,5 @@ security:
   description: Certificate Manager and Unified Crypto GUI
 - name: kwalletmanager
   description: Wallet management tool
+- name: ksshaskpass
+  description: ssh-add helper that uses kwallet and kpassworddialog
