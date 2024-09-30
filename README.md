@@ -4,6 +4,10 @@ Tool to automate vanilla Arch Linux setup and configuration, minimally.
 
 After running it, you should have a fully functional Arch Linux system with KDE Plasma and all the tools and customization that I preffer :).
 
+## Deprecated
+
+Since I have switched to CachyOS, this repo is deprecated in favor of <https://github.com/thedataflows/pimp-my-cachyos>
+
 ## Motivation
 
 While Arch gives you a ton of flexibility, some times it feels too much. Once I settled on a particular setup, I just wanted to be productive and stop tinkering. To get to that setup, for me at least, it was quite the effort.
@@ -50,7 +54,7 @@ Discouraged by some crashes and freezes.
 
 Gave Hyprland a go, but having a HiDPI display did not help because of scaling. Liked the simplicity and speed, but it not yet for me.
 
-### KDE Plasma
+### KDE Plasma (default)
 
 I liked the look and feel of modern Gnome, but I wanted more control over the desktop. Also, some of the most used apps are QT (KDE is built with QT) and had to do some customization specifically for them.
 
@@ -64,7 +68,12 @@ So I decided to give KDE Plasma a go. I was surprised by how smooth it runs and 
 
 Wanted to go with the lightest install possible, but still ended up installing `plasma-desktop`.
 
-If you want a more polished experience OOTB with KDE Plasma and do not mind the additional bloatware, perhaps try [EndeavourOS](https://endeavouros.com/) or [Manjaro](https://manjaro.org/) (has it own repos). Comparison video: <https://www.youtube.com/watch?v=jv9VSh5zIGw>
+If you want a more polished experience OOTB with KDE Plasma and do not mind the additional bloatware, perhaps try:
+
+- [CachyOS](https://cachyos.org/)
+- [EndeavourOS](https://endeavouros.com/)
+- [Manjaro](https://manjaro.org/) (has it own repos). Comparison to EndeavourOS: <https://www.youtube.com/watch?v=jv9VSh5zIGw>
+- [Garuda](https://garudalinux.org/)
 
 ## Why yaml and taskfile.dev?
 
