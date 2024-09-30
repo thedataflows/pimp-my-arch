@@ -63,6 +63,7 @@ tasks:
       # - task: hyprland
       - task: containerd
       - task: configuration
+      # - task: looking-glass
 
   configuration:
     desc: Configuration aggregate task
@@ -74,7 +75,7 @@ tasks:
       - task: catppuccin-mocha-grub-theme_config
       - task: rustdesk_configure
       - task: sunshine_config
-      - task: gnome-ssh-askpass4_config
+      # - task: gnome-ssh-askpass4_config
       - task: all_configs
 
   all_configs:
@@ -412,7 +413,7 @@ tasks:
       - task: system:iamnotroot
       - task: installers:install_paru
     status:
-      - paru -Qi catppuccin-mocha-grub-theme-git &>/dev/null && exit 1 || exit 0
+      - paru -Q catppuccin-mocha-grub-theme-git &>/dev/null && exit 1 || exit 0
     cmds:
       - "{{.TASK_TITLE}}"
       - |
@@ -453,7 +454,7 @@ tasks:
       - task: system:iamnotroot
       - task: installers:install_paru
     status:
-      - paru -Qi gnome-ssh-askpass4-git &>/dev/null && exit 1 || exit 0
+      - paru -Q gnome-ssh-askpass4-git &>/dev/null && exit 1 || exit 0
     cmds:
       - "{{.TASK_TITLE}}"
       - |
@@ -488,3 +489,47 @@ tasks:
           sudo systemctl enable {{.SERVICE}}
         ! sudo systemctl is-active {{.SERVICE}} &>/dev/null && \
           sudo systemctl start {{.SERVICE}}
+
+  virtualization:
+    desc: Install virtualization packages
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
+    cmds:
+      - |
+        paru -Q virt-manager &>/dev/null || {{.PARU}} virt-manager
+        paru -Q qemu-desktop &>/dev/null || {{.PARU}} qemu-desktop
+      - task: all_configs
+      - |
+        echo ">> Enabling and starting services"
+        for SVC in libvirtd virtnetworkd virtstoraged virtnodedevd; do
+          ! sudo systemctl is-enabled $SVC &>/dev/null && \
+            sudo systemctl enable $SVC
+          ! sudo systemctl is-active $SVC &>/dev/null && \
+            sudo systemctl start $SVC
+        done
+        USER=$(id -un)
+        for GRP in libvirt libvirt-qemu; do
+          if [[ ! " $(id -Gn) " =~ $GRP ]]; then
+            echo ">> Adding user $USER to $GRP group"
+            sudo usermod -aG $GRP $USER
+          fi
+        done
+        echo "Downgrade EFI OVMF firmware that works with Looking Glass kvmfr module"
+        paru -U --noconfirm --needed https://archive.archlinux.org/packages/e/edk2-ovmf/edk2-ovmf-202208-3-any.pkg.tar.zst
+
+
+
+  looking-glass:
+    desc: Install and configure Looking Glass
+    deps:
+      - task: system:iamnotroot
+      - task: installers:install_paru
+    cmds:
+      - "{{.TASK_TITLE}}"
+      - |
+        type looking-glass-client &>/dev/null || {{.PARU}} looking-glass-client
+        paru -Q looking-glass-rc-module-dkms &>/dev/null || {{.PARU}} looking-glass-rc-module-dkms
+      - task: all_configs
+      - |
+        ## https://looking-glass.io/docs/B7-rc1/install_libvirt/
